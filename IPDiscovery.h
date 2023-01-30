@@ -8,7 +8,7 @@ class IPDiscovery {
 
     static std::string getIPv4Str(int octet1, int octet2, int octet3, int octet4);
     bool canPing(std::string ip);
-    std::string getLocalHostIP();
+    std::vector<std::string> getLocalHostIPs();
     std::vector<std::string> getIPAddressSearchRange();
 
     std::vector<std::string> getPingableRemoteLANIPs();
