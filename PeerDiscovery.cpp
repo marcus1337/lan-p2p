@@ -15,6 +15,13 @@ PeerDiscovery::~PeerDiscovery(){
     stopSearch();
 }
 
+bool PeerDiscovery::clientHandshake(asio::ip::tcp::socket& _socket) {
+    return false;
+}
+bool PeerDiscovery::serverHandshake(asio::ip::tcp::socket& _socket) {
+    return false;
+}
+
 void PeerDiscovery::setSocket(asio::ip::tcp::socket _socket) {
     std::lock_guard<std::mutex> lock(socketMutex);
     if (trySetStateConnected()) {
@@ -39,7 +46,7 @@ void PeerDiscovery::clientConnect(std::string ip) {
     _socket.connect(endpoint, ec);
     timer.cancel();
 
-    if (_socket.is_open()) {
+    if (_socket.is_open() && clientHandshake(_socket)) {
         std::cout << "client " << ip << "\n";
         setSocket(std::move(_socket));
     }
@@ -73,7 +80,7 @@ void PeerDiscovery::serverConnect() {
         });
     acceptor.accept(_socket);
 
-    if (_socket.is_open()) {
+    if (_socket.is_open() && serverHandshake(_socket)) {
         setSocket(std::move(_socket));
     }
 }
