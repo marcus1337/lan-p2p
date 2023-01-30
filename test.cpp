@@ -1,6 +1,9 @@
 
 #include "IPDiscovery.h"
+#include "PeerDiscovery.h"
 #include <iostream>
+
+using namespace peer2peer;
 
 int main()
 {

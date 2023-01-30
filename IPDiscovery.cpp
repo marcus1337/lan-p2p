@@ -3,11 +3,13 @@
 #include <future>
 #include <iostream>
 #include <vector>
-#include <asio.hpp>
 #include <chrono>
 #include <thread>
 #include <sstream>
 #include <memory>
+#include <asio.hpp>
+
+using namespace peer2peer;
 
 
 #ifdef _WIN32
