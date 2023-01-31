@@ -45,6 +45,9 @@ LinkState P2PNetworking::getState() {
     if (connection != nullptr) {
         return connection->getState();
     }
+    else if (peerDiscovery.getState() == LinkState::CONNECTED) {
+        return LinkState::LOCATING;
+    }
     else {
         return peerDiscovery.getState();
     }
