@@ -7,7 +7,7 @@
 namespace peer2peer {
 
     enum class LinkState {
-        DISCONNECTED, LOCATING, CONNECTED
+        DISCONNECTED = 0, LOCATING, CONNECTED
     };
 
     class LinkStateWrap {

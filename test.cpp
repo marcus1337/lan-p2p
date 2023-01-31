@@ -1,32 +1,21 @@
 
-#include "IPDiscovery.h"
-#include "PeerDiscovery.h"
+#include "P2PNetworking.h"
 #include <iostream>
-
-#include <thread>
-#include <chrono>
 
 using namespace peer2peer;
 
 int main()
 {
-    /*IPDiscovery ipDiscovery;
-    auto remoteIPs = ipDiscovery.getRemoteLANIPs();
-    for (auto ip : remoteIPs) {
-        std::cout << "[" << ip << "]\n";
-    }*/
+    P2PNetworking p2pNetworking;
+    p2pNetworking.start();
 
-    PeerDiscovery peerDiscovery;
-    peerDiscovery.startSearch();
-
-    while (peerDiscovery.getState() == LinkState::LOCATING) {
-
-        std::cout << "locating...\n";
+    while (p2pNetworking.getState() != LinkState::DISCONNECTED) {
+        std::cout << "state " << (int) p2pNetworking.getState() << "\n";
+        p2pNetworking.update();
         std::this_thread::sleep_for(std::chrono::milliseconds(500));
-
     }
 
-    std::cout << "Found something...........\n";
+    std::cout << "Closing program.\n";
 
     return 0;
 }

@@ -7,7 +7,7 @@ using namespace peer2peer;
 
 void PeerReceiver::addMessage(std::string msg) {
     std::lock_guard<std::mutex> lock(msgMutex);
-    messages.push_back(msg);
+    messages.push(msg);
 }
 
 void PeerReceiver::receive() {
@@ -35,11 +35,11 @@ PeerReceiver::~PeerReceiver() {
         receiveThread.join();
 }
 
-std::vector<std::string> PeerReceiver::popMessages() {
+std::string PeerReceiver::popMessage() {
     std::lock_guard<std::mutex> lock(msgMutex);
-    std::vector<std::string> messagesCopy = messages;
-    messages.clear();
-    return messagesCopy;
+    std::string msg = messages.front();
+    messages.pop();
+    return msg;
 }
 
 bool PeerReceiver::hasMessage() {
