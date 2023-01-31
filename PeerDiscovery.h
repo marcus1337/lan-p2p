@@ -22,9 +22,6 @@ namespace peer2peer {
 
         std::thread clientThread, serverThread;
 
-        bool clientHandshake(asio::ip::tcp::socket& _socket);
-        bool serverHandshake(asio::ip::tcp::socket& _socket);
-
         void setSocket(asio::ip::tcp::socket _socket);
         void clientConnect(std::string ip);
         void clientSearch();
