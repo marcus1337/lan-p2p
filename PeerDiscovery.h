@@ -13,7 +13,7 @@ namespace peer2peer {
 
         std::mutex socketMutex;
         const int serverPort = 5431;
-        const int waitTimeSeconds = 5;
+        const int waitTimeSeconds = 4;
 
         LinkStateWrap stateWrap;
         asio::io_context io_context;

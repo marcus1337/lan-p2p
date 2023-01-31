@@ -11,7 +11,7 @@ PeerDiscovery::PeerDiscovery() : stateWrap(LinkState::DISCONNECTED), socket_(io_
 
 }
 
-PeerDiscovery::~PeerDiscovery(){
+PeerDiscovery::~PeerDiscovery() {
     stopSearch();
 }
 
@@ -26,25 +26,19 @@ bool PeerDiscovery::setSocket(asio::ip::tcp::socket _socket) {
 
 void PeerDiscovery::clientConnect(std::string ip) {
     tcp::socket _socket(io_context);
-
-    asio::steady_timer timer(io_context, std::chrono::seconds(waitTimeSeconds));
-    timer.async_wait([&_socket](const std::error_code& error) {
-        if (!error)
-        {
-            _socket.close();
-        }
-        });
-
     asio::ip::address ipAddress = asio::ip::make_address(ip);
     tcp::endpoint endpoint(ipAddress, serverPort);
-    std::error_code ec;
-    _socket.connect(endpoint, ec);
-    timer.cancel();
 
-    if (setSocket(std::move(_socket))) {
-        std::cout << "Client connection ip [" << ip << "]\n";
+    auto future = std::async([&_socket, endpoint]() {
+        _socket.connect(endpoint);
+        });
+    auto status = future.wait_for(std::chrono::seconds(waitTimeSeconds));
+    if (status == std::future_status::ready && setSocket(std::move(_socket))) {
+        std::cout << "Connected [" << ip << "]\n";
     }
-
+    else {
+        std::cout << "Client [" << ip << "] timeout.\n";
+    }
 }
 
 void PeerDiscovery::clientSearch() {
@@ -66,17 +60,12 @@ void PeerDiscovery::clientSearch() {
 void PeerDiscovery::serverConnect() {
     tcp::acceptor acceptor(io_context, tcp::endpoint(tcp::v4(), serverPort));
     tcp::socket _socket(io_context);
-    asio::steady_timer timer(io_context, std::chrono::seconds(waitTimeSeconds));
-    timer.async_wait([&_socket](const std::error_code& error) {
-        if (!error)
-        {
-            _socket.close();
-        }
+    auto future = std::async([&_socket, &acceptor]() {
+        acceptor.accept(_socket);
         });
-    acceptor.accept(_socket);
-
-    if (setSocket(std::move(_socket))) {
-        std::cout << "Server connection\n";
+    auto status = future.wait_for(std::chrono::seconds(waitTimeSeconds));
+    if (status == std::future_status::ready && setSocket(std::move(_socket))) {
+        std::cout << "Server connected\n";
     }
 }
 

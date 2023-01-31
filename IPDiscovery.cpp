@@ -8,6 +8,10 @@
 #include <sstream>
 #include <memory>
 #include <asio.hpp>
+#include <string>
+#include <vector>
+#include <algorithm>
+#include <exception>
 
 using namespace peer2peer;
 
@@ -19,25 +23,6 @@ using namespace peer2peer;
 #include <icmpapi.h>
 #include <WS2tcpip.h>
 #include <winsock2.h>
-
-bool IPDiscovery::canPing(std::string ip) {
-    IPAddr dstAddress = 0;
-    int result = inet_pton(AF_INET, ip.c_str(), &dstAddress);
-    if (result != 1)
-        return false;
-
-    unsigned char sendData[] = "ping";
-    const DWORD replySize = sizeof(ICMP_ECHO_REPLY) + sizeof(sendData);
-    PICMP_ECHO_REPLY pReply[replySize];
-
-    DWORD replyTimeout = 1000; // timeout in milliseconds
-    HANDLE hIcmpFile = IcmpCreateFile();
-    if (hIcmpFile == INVALID_HANDLE_VALUE)
-        return false;
-    DWORD replyStatus = IcmpSendEcho(hIcmpFile, dstAddress, sendData, sizeof(sendData), nullptr, pReply, replySize, replyTimeout);
-    IcmpCloseHandle(hIcmpFile);
-    return replyStatus != 0;
-}
 
 std::vector<std::string> IPDiscovery::getLocalHostIPs() {
 
@@ -72,42 +57,91 @@ std::vector<std::string> IPDiscovery::getLocalHostIPs() {
 
 #endif
 
-std::string IPDiscovery::getIPv4Str(int octet1, int octet2, int octet3, int octet4) {
-    std::stringstream ipStrStream;
-    ipStrStream << octet1 << "." << octet2 << "." << octet3 << "." << octet4;
-    return ipStrStream.str();
-}
 
-std::vector<std::string> IPDiscovery::getIPAddressSearchRange() {
-    std::vector<std::string> ips;
-    for (int i = 2; i <= 255; i++) {
-        ips.push_back(getIPv4Str(192, 168, 1, i));
-    }
-    return ips;
-}
+void IPDiscovery::broadcast() {
+    asio::io_context ioc;
+    asio::ip::udp::socket socket(ioc);
+    socket.open(asio::ip::udp::v4());
+    socket.set_option(asio::socket_base::broadcast(true));
+    socket.set_option(asio::socket_base::reuse_address(true));
+    asio::ip::udp::endpoint broadcast_endpoint(
+        asio::ip::address_v4::broadcast(), broadcastPort
+    );
 
-std::vector<std::string> IPDiscovery::getPingableRemoteLANIPs() {
-    std::vector<std::future<bool>> futures;
-    auto ips = getIPAddressSearchRange();
-    for (auto ip : ips) {
-        futures.push_back(std::async(std::launch::async, &IPDiscovery::canPing, this, ip));
+    while (running) {
+        std::array<char, 1> send_buffer = { {0} };
+        socket.send_to(asio::buffer(send_buffer), broadcast_endpoint);
+        std::this_thread::sleep_for(std::chrono::milliseconds(500));
     }
-    std::vector<std::string> pingableIPs;
-    for (int i = 0; i < ips.size(); i++) {
-        futures[i].wait();
-        if (futures[i].get())
-            pingableIPs.push_back(ips[i]);
-    }
-    return pingableIPs;
 }
 
 std::vector<std::string> IPDiscovery::getRemoteLANIPs() {
-    auto pingableIPs = getPingableRemoteLANIPs();
+    auto _ipAddresses = getIPs();
+    removeLocalHostIPs(_ipAddresses);
+    return _ipAddresses;
+}
 
+void IPDiscovery::removeLocalHostIPs(std::vector<std::string>& _ipAddresses) {
     std::vector<std::string> localHostIPs = getLocalHostIPs();
     for (const auto& localHostIP : localHostIPs) {
-        pingableIPs.erase(std::remove(pingableIPs.begin(), pingableIPs.end(), localHostIP), pingableIPs.end());
+        _ipAddresses.erase(std::remove(_ipAddresses.begin(), _ipAddresses.end(), localHostIP), _ipAddresses.end());
     }
+}
 
-    return pingableIPs;
+void IPDiscovery::addIP(std::string ip) {
+    std::lock_guard<std::mutex> lock(dataMutex);
+    auto it = std::find(ipAddresses.begin(), ipAddresses.end(), ip);
+    if (it == ipAddresses.end()) {
+        std::cout << "Detected IP: " << ip << "\n";
+        ipAddresses.push_back(ip);
+    }
+}
+
+std::vector<std::string> IPDiscovery::getIPs() {
+    std::lock_guard<std::mutex> lock(dataMutex);
+    return ipAddresses;
+}
+
+
+void IPDiscovery::detectBroadcasts() {
+    asio::io_context ioc;
+    asio::ip::udp::socket socket(ioc);
+    socket.open(asio::ip::udp::v4());
+    socket.set_option(asio::socket_base::reuse_address(true));
+    socket.set_option(asio::socket_base::broadcast(true));
+    asio::ip::udp::endpoint listen_endpoint(
+        asio::ip::make_address("0.0.0.0"), broadcastPort
+    );
+    socket.bind(listen_endpoint);
+    std::array<char, 1024> recv_buffer;
+    while (running) {
+        try {
+            asio::ip::udp::endpoint sender_endpoint;
+            auto bytes_received = socket.receive_from(
+                asio::buffer(recv_buffer), sender_endpoint
+            );
+            if (bytes_received > 0) {
+                addIP(sender_endpoint.address().to_string());
+            }
+        }
+        catch (std::exception& e) {
+            std::cerr << "Error: " << e.what() << std::endl;
+        }
+    }
+}
+
+IPDiscovery::IPDiscovery() {
+    running = true;
+    detectBroadcastThread = std::thread(&IPDiscovery::detectBroadcasts, this);
+    broadcastThread = std::thread(&IPDiscovery::broadcast, this);
+}
+
+IPDiscovery::~IPDiscovery() {
+    running = false;
+    if (detectBroadcastThread.joinable()) {
+        detectBroadcastThread.join();
+    }
+    if (broadcastThread.joinable()) {
+        broadcastThread.join();
+    }
 }

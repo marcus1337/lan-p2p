@@ -3,17 +3,27 @@
 #define IPDISCOVERY_H
 #include <string>
 #include <vector>
+#include <mutex>
+#include <atomic>
+#include <thread>
 
 namespace peer2peer {
     class IPDiscovery {
 
-        static std::string getIPv4Str(int octet1, int octet2, int octet3, int octet4);
-        bool canPing(std::string ip);
+        std::atomic<bool> running;
+        std::thread detectBroadcastThread, broadcastThread;
+        const int broadcastPort = 9678;
+        std::mutex dataMutex;
+        std::vector<std::string> ipAddresses;
+        void addIP(std::string ip);
+        std::vector<std::string> getIPs();
         std::vector<std::string> getLocalHostIPs();
-        std::vector<std::string> getIPAddressSearchRange();
-
-        std::vector<std::string> getPingableRemoteLANIPs();
+        void detectBroadcasts();
+        void broadcast();
+        void removeLocalHostIPs(std::vector<std::string>& _ipAddresses);
     public:
+        IPDiscovery();
+        ~IPDiscovery();
         std::vector<std::string> getRemoteLANIPs();
     };
 }
