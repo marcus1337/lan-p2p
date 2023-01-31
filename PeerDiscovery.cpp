@@ -96,12 +96,11 @@ LinkState PeerDiscovery::getState() {
     return stateWrap.getState();
 }
 
-asio::ip::tcp::socket& PeerDiscovery::socket() {
-    return socket_;
+asio::ip::tcp::socket&& PeerDiscovery::getSocket() {
+    return std::move(socket_);
 }
 
 void PeerDiscovery::startSearch() {
-    joinThreads();
     stateWrap.setState(LinkState::LOCATING);
     clientThread = std::thread(&PeerDiscovery::clientSearch, this);
     serverThread = std::thread(&PeerDiscovery::serverSearch, this);

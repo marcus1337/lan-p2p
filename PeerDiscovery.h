@@ -5,6 +5,7 @@
 #include "IPDiscovery.h"
 #include <mutex>
 #include "LinkState.h"
+#include <utility>
 
 namespace peer2peer {
 
@@ -31,12 +32,10 @@ namespace peer2peer {
 
         PeerDiscovery();
         ~PeerDiscovery();
-
         void startSearch();
         void stopSearch();
-
         LinkState getState();
-        asio::ip::tcp::socket& socket();
+        asio::ip::tcp::socket&& getSocket();
 
     };
 }
