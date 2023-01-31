@@ -7,7 +7,7 @@ using namespace peer2peer;
 using namespace asio::ip;
 
 
-PeerDiscovery::PeerDiscovery() : state(LinkState::DISCONNECTED), socket_(io_context) {
+PeerDiscovery::PeerDiscovery() : stateWrap(LinkState::DISCONNECTED), socket_(io_context) {
 
 }
 
@@ -15,11 +15,13 @@ PeerDiscovery::~PeerDiscovery(){
     stopSearch();
 }
 
-void PeerDiscovery::setSocket(asio::ip::tcp::socket _socket) {
+bool PeerDiscovery::setSocket(asio::ip::tcp::socket _socket) {
     std::lock_guard<std::mutex> lock(socketMutex);
-    if (trySetStateConnected()) {
+    if (LinkStateWrap::getSocketState(_socket) == LinkState::CONNECTED && stateWrap.trySetStateConnected()) {
         socket_ = std::move(_socket);
+        return true;
     }
+    return false;
 }
 
 void PeerDiscovery::clientConnect(std::string ip) {
@@ -39,15 +41,10 @@ void PeerDiscovery::clientConnect(std::string ip) {
     _socket.connect(endpoint, ec);
     timer.cancel();
 
-    try {
-        if (_socket.is_open() && _socket.remote_endpoint().address() != asio::ip::address()) {
-            std::cout << "client " << ip << "\n";
-            setSocket(std::move(_socket));
-        }
+    if (setSocket(std::move(_socket))) {
+        std::cout << "Client connection ip [" << ip << "]\n";
     }
-    catch (std::exception& e) {
-        std::cout << e.what() << "\n";
-    }
+
 }
 
 void PeerDiscovery::clientSearch() {
@@ -78,8 +75,8 @@ void PeerDiscovery::serverConnect() {
         });
     acceptor.accept(_socket);
 
-    if (_socket.is_open()) {
-        setSocket(std::move(_socket));
+    if (setSocket(std::move(_socket))) {
+        std::cout << "Server connection\n";
     }
 }
 
@@ -95,23 +92,8 @@ void PeerDiscovery::serverSearch() {
     }
 }
 
-void PeerDiscovery::setState(LinkState _state) {
-    std::lock_guard<std::mutex> lock(stateMutex);
-    state = _state;
-}
-
-bool PeerDiscovery::trySetStateConnected() {
-    std::lock_guard<std::mutex> lock(stateMutex);
-    if (state == LinkState::LOCATING) {
-        state = LinkState::CONNECTED;
-        return true;
-    }
-    return false;
-}
-
 LinkState PeerDiscovery::getState() {
-    std::lock_guard<std::mutex> lock(stateMutex);
-    return state;
+    return stateWrap.getState();
 }
 
 asio::ip::tcp::socket& PeerDiscovery::socket() {
@@ -120,19 +102,13 @@ asio::ip::tcp::socket& PeerDiscovery::socket() {
 
 void PeerDiscovery::startSearch() {
     joinThreads();
-    socket_.close();
-    setState(LinkState::LOCATING);
+    stateWrap.setState(LinkState::LOCATING);
     clientThread = std::thread(&PeerDiscovery::clientSearch, this);
     serverThread = std::thread(&PeerDiscovery::serverSearch, this);
 }
 
 void PeerDiscovery::stopSearch() {
-    if (socket_.is_open()) {
-        setState(LinkState::CONNECTED);
-    }
-    else {
-        setState(LinkState::DISCONNECTED);
-    }
+    stateWrap.stopLocating();
     joinThreads();
 }
 

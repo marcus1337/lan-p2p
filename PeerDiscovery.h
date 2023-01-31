@@ -4,32 +4,28 @@
 #include <asio.hpp>
 #include "IPDiscovery.h"
 #include <mutex>
+#include "LinkState.h"
 
 namespace peer2peer {
-    enum class LinkState {
-        DISCONNECTED, LOCATING, CONNECTED
-    };
 
     class PeerDiscovery {
 
-        std::mutex stateMutex, socketMutex;
+        std::mutex socketMutex;
         const int serverPort = 5431;
         const int waitTimeSeconds = 5;
 
-        LinkState state;
+        LinkStateWrap stateWrap;
         asio::io_context io_context;
         asio::ip::tcp::socket socket_;
 
         std::thread clientThread, serverThread;
 
-        void setSocket(asio::ip::tcp::socket _socket);
+        bool setSocket(asio::ip::tcp::socket _socket);
         void clientConnect(std::string ip);
         void clientSearch();
         void serverConnect();
         void serverSearch();
-        void setState(LinkState _state);
         void joinThreads();
-        bool trySetStateConnected();
 
     public:
 
