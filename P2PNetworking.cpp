@@ -1,4 +1,5 @@
 #include "P2PNetworking.h"
+#include <iostream>
 
 using namespace peer2peer;
 
@@ -25,10 +26,9 @@ void P2PNetworking::stop() {
 }
 
 void P2PNetworking::update() {
-    if (connection == nullptr) {
-        if (peerDiscovery.getState() == LinkState::CONNECTED) {
-            connection = std::make_unique<PeerConnection>(peerDiscovery.getSocket());
-        }
+    if (connection == nullptr && peerDiscovery.getState() == LinkState::CONNECTED) {
+        connection = std::make_unique<PeerConnection>(peerDiscovery.getSocketRef());
+        peerDiscovery.stopSearch();
     }
 }
 void P2PNetworking::sendMessage(std::string msg) {
@@ -45,11 +45,11 @@ LinkState P2PNetworking::getState() {
     if (connection != nullptr) {
         return connection->getState();
     }
-    else if (peerDiscovery.getState() == LinkState::CONNECTED) {
+    else if (peerDiscovery.getState() != LinkState::DISCONNECTED) {
         return LinkState::LOCATING;
     }
     else {
-        return peerDiscovery.getState();
+        return LinkState::DISCONNECTED;
     }
 }
 

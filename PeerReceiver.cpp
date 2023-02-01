@@ -11,22 +11,26 @@ void PeerReceiver::addMessage(std::string msg) {
 }
 
 void PeerReceiver::receive() {
-    while (true) {
-        try {
-            std::string result;
-            asio::read_until(socket, asio::dynamic_buffer(result), "\n");
-            std::cout << "receive() [" << result << "]\n";
-            addMessage(result);
+    while (stateWrap.getState() == LinkState::CONNECTED) {
+        asio::error_code ec;
+        uint8_t data[512];
+        socketMutex.lock();
+        size_t len = socket.read_some(asio::buffer(data), ec);
+        socketMutex.unlock();
+        std::string str(data, data + len);
+        
+        if (ec) {
+            std::cout << "error: " << ec.message() << "\n";
+            stateWrap.setState(LinkState::DISCONNECTED);
         }
-        catch (std::exception& e) {
-            std::cout << "Receiver error: " << e.what() << "\n";
-            return;
+        else {
+            addMessage(str);
         }
-
     }
+
 }
 
-PeerReceiver::PeerReceiver(asio::ip::tcp::socket& _socket) : socket(_socket) {
+PeerReceiver::PeerReceiver(asio::ip::tcp::socket& _socket, std::mutex& _socketMutex, LinkStateWrap& _stateWrap) : socket(_socket), socketMutex(_socketMutex), stateWrap(_stateWrap) {
     receiveThread = std::thread(&PeerReceiver::receive, this);
 }
 

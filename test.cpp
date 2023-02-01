@@ -17,20 +17,26 @@ std::string getTime() {
 int main()
 {
     P2PNetworking p2pNetworking;
-    p2pNetworking.start();
 
-    std::string timeStr = getTime();
+    while (true) {
 
-    while (p2pNetworking.getState() != LinkState::DISCONNECTED) {
-        std::cout << "state " << (int) p2pNetworking.getState() << "\n";
-        p2pNetworking.update();
-        if (p2pNetworking.getState() == LinkState::CONNECTED) {
-            p2pNetworking.sendMessage(timeStr);
-            if (p2pNetworking.hasMessage()) {
-                std::cout << "Msg [" << p2pNetworking.popMessage() << "\n";
+        p2pNetworking.start();
+
+        while (p2pNetworking.getState() != LinkState::DISCONNECTED) {
+            std::cout << "state " << (int)p2pNetworking.getState() << "\n";
+            p2pNetworking.update();
+            if (p2pNetworking.getState() == LinkState::CONNECTED) {
+                p2pNetworking.sendMessage(getTime());
+                if (p2pNetworking.hasMessage()) {
+                    std::cout << "Msg [" << p2pNetworking.popMessage() << "\n";
+                }
             }
+            std::this_thread::sleep_for(std::chrono::milliseconds(500));
         }
-        std::this_thread::sleep_for(std::chrono::milliseconds(500));
+
+        std::cout << "b4 stop...\n";
+        p2pNetworking.stop();
+        std::cout << "after stop\n";
     }
 
     std::cout << "Closing program.\n";

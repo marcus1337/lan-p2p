@@ -6,11 +6,15 @@
 #include <mutex>
 #include <atomic>
 #include <thread>
+#include <asio.hpp>
 
 namespace peer2peer {
     class IPDiscovery {
 
         std::atomic<bool> running;
+
+        asio::io_context ioc;
+        asio::ip::udp::socket detectSocket, sendSocket;
         std::thread detectBroadcastThread, broadcastThread;
         const int broadcastPort = 9678;
         std::mutex dataMutex;

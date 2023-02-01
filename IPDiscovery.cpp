@@ -59,18 +59,16 @@ std::vector<std::string> IPDiscovery::getLocalHostIPs() {
 
 
 void IPDiscovery::broadcast() {
-    asio::io_context ioc;
-    asio::ip::udp::socket socket(ioc);
-    socket.open(asio::ip::udp::v4());
-    socket.set_option(asio::socket_base::broadcast(true));
-    socket.set_option(asio::socket_base::reuse_address(true));
+    sendSocket.open(asio::ip::udp::v4());
+    sendSocket.set_option(asio::socket_base::broadcast(true));
+    sendSocket.set_option(asio::socket_base::reuse_address(true));
     asio::ip::udp::endpoint broadcast_endpoint(
         asio::ip::address_v4::broadcast(), broadcastPort
     );
 
-    while (running) {
+    while (running.load()) {
         std::array<char, 1> send_buffer = { {0} };
-        socket.send_to(asio::buffer(send_buffer), broadcast_endpoint);
+        sendSocket.send_to(asio::buffer(send_buffer), broadcast_endpoint);
         std::this_thread::sleep_for(std::chrono::milliseconds(500));
     }
 }
@@ -104,20 +102,18 @@ std::vector<std::string> IPDiscovery::getIPs() {
 
 
 void IPDiscovery::detectBroadcasts() {
-    asio::io_context ioc;
-    asio::ip::udp::socket socket(ioc);
-    socket.open(asio::ip::udp::v4());
-    socket.set_option(asio::socket_base::reuse_address(true));
-    socket.set_option(asio::socket_base::broadcast(true));
+    detectSocket.open(asio::ip::udp::v4());
+    detectSocket.set_option(asio::socket_base::reuse_address(true));
+    detectSocket.set_option(asio::socket_base::broadcast(true));
     asio::ip::udp::endpoint listen_endpoint(
         asio::ip::make_address("0.0.0.0"), broadcastPort
     );
-    socket.bind(listen_endpoint);
+    detectSocket.bind(listen_endpoint);
     std::array<char, 1024> recv_buffer;
-    while (running) {
+    while (running.load()) {
         try {
             asio::ip::udp::endpoint sender_endpoint;
-            auto bytes_received = socket.receive_from(
+            auto bytes_received = detectSocket.receive_from(
                 asio::buffer(recv_buffer), sender_endpoint
             );
             if (bytes_received > 0) {
@@ -130,18 +126,21 @@ void IPDiscovery::detectBroadcasts() {
     }
 }
 
-IPDiscovery::IPDiscovery() {
-    running = true;
+IPDiscovery::IPDiscovery() : detectSocket(ioc), sendSocket(ioc) {
+    running.store(true);
     detectBroadcastThread = std::thread(&IPDiscovery::detectBroadcasts, this);
     broadcastThread = std::thread(&IPDiscovery::broadcast, this);
 }
 
 IPDiscovery::~IPDiscovery() {
-    running = false;
+    running.store(false);
+    detectSocket.close();
+    sendSocket.close();
     if (detectBroadcastThread.joinable()) {
         detectBroadcastThread.join();
     }
     if (broadcastThread.joinable()) {
         broadcastThread.join();
     }
+    std::cout << "Broadcast threads joined\n";
 }

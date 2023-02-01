@@ -6,7 +6,7 @@
 using namespace peer2peer;
 
 
-LinkStateWrap::LinkStateWrap(LinkState _state) {
+LinkStateWrap::LinkStateWrap(LinkState _state) : state(_state) {
 
 }
 LinkState LinkStateWrap::getState() {

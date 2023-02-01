@@ -6,10 +6,13 @@
 #include <string>
 #include <thread>
 #include <queue>
+#include "LinkState.h"
 
 namespace peer2peer {
     class PeerReceiver {
 
+        LinkStateWrap& stateWrap;
+        std::mutex& socketMutex;
         std::mutex msgMutex;
         asio::ip::tcp::socket& socket;
         std::queue<std::string> messages;
@@ -18,7 +21,7 @@ namespace peer2peer {
         void addMessage(std::string msg);
         void receive();
     public:
-        PeerReceiver(asio::ip::tcp::socket& _socket);
+        PeerReceiver(asio::ip::tcp::socket& _socket, std::mutex& socketMutex, LinkStateWrap& _stateWrap);
         ~PeerReceiver();
         std::string popMessage();
         bool hasMessage();

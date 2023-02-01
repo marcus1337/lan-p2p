@@ -6,6 +6,7 @@
 #include <mutex>
 #include "LinkState.h"
 #include <utility>
+#include <atomic>
 
 namespace peer2peer {
 
@@ -21,7 +22,7 @@ namespace peer2peer {
 
         std::thread clientThread, serverThread;
 
-        bool setSocket(asio::ip::tcp::socket _socket);
+        bool setSocket(asio::ip::tcp::socket&& _socket);
         void clientConnect(std::string ip);
         void clientSearch();
         void serverConnect();
@@ -35,7 +36,7 @@ namespace peer2peer {
         void startSearch();
         void stopSearch();
         LinkState getState();
-        asio::ip::tcp::socket&& getSocket();
+        asio::ip::tcp::socket& getSocketRef();
 
     };
 }

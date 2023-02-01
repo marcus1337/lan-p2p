@@ -4,24 +4,26 @@
 
 using namespace peer2peer;
 
-PeerConnection::PeerConnection(asio::ip::tcp::socket _socket) : socket(std::move(_socket)), receiver(socket) {
+PeerConnection::PeerConnection(asio::ip::tcp::socket& _socket) : socket(_socket), receiver(_socket, socketMutex, stateWrap), stateWrap(LinkState::CONNECTED) {
 
 }
+
 void PeerConnection::sendMessage(std::string msg) {
-    try {
-        asio::error_code ignored_error;
-        asio::write(socket, asio::buffer(msg), ignored_error);
-    }
-    catch (std::exception& e) {
-        std::cerr << e.what() << std::endl;
+    std::lock_guard<std::mutex> loc(socketMutex);
+    asio::error_code ec;
+    socket.write_some(asio::buffer(msg), ec);
+    if (ec) {
+        std::cout << "send error: " << ec.message() << "\n";
+        stateWrap.setState(LinkState::DISCONNECTED);
     }
 }
 
 LinkState PeerConnection::getState() {
-    return LinkStateWrap::getSocketState(socket);
+    return stateWrap.getState();
 }
 
 void PeerConnection::close() {
+    std::cout << "PeerConnection::close()\n";
     socket.close();
 }
 
