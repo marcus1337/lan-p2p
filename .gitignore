@@ -427,3 +427,7 @@ FodyWeavers.xsd
 *.sln
 *.filters
 *vcxproj
+out/
+CMakeSettings.json
+
+

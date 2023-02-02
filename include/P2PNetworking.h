@@ -1,13 +1,12 @@
 
 #ifndef P2PNETWORKING_H
 #define P2PNETWORKING_H
-#include "PeerDiscovery.h"
-#include "PeerConnection.h"
-#include "LinkState.h"
-#include "IPDiscovery.h"
+#include "p2p/PeerDiscovery.h"
+#include "p2p/PeerConnection.h"
+#include "p2p/LinkState.h"
+#include "p2p/IPDiscovery.h"
 #include <memory>
 #include <string>
-#include "IPDiscovery.h"
 
 namespace peer2peer {
 
