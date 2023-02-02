@@ -17,7 +17,7 @@ void PeerReceiver::receive() {
         size_t len = socket.read_some(asio::buffer(data), ec);
         std::string str(data, data + len);
         
-        if (ec) {
+        if (ec && ec != asio::error::eof) {
             std::cout << "error: " << ec.message() << "\n";
             stateWrap.setState(LinkState::DISCONNECTED);
         }
