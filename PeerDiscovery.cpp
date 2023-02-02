@@ -7,7 +7,7 @@ using namespace peer2peer;
 using namespace asio::ip;
 
 
-PeerDiscovery::PeerDiscovery(LinkStateWrap& _stateWrap) : stateWrap(_stateWrap), socket_(io_context) {
+PeerDiscovery::PeerDiscovery(LinkStateWrap& _stateWrap) : stateWrap(_stateWrap), socket_(client_io_context) {
 
 }
 
@@ -48,7 +48,7 @@ void PeerDiscovery::clientTryConnections() {
     std::vector<std::shared_ptr<tcp::socket>> socketPtrs;
 
     for (auto ip : ipDiscovery.getRemoteLANIPs()) {
-        std::shared_ptr<tcp::socket> socketPtr = std::make_shared<tcp::socket>(io_context);
+        std::shared_ptr<tcp::socket> socketPtr = std::make_shared<tcp::socket>(client_io_context);
         std::shared_ptr<bool> passedBlock = std::make_shared<bool>(false);
         clients.push_back(std::async(&PeerDiscovery::clientConnect, this, ip, std::ref(*socketPtr), std::ref(*passedBlock)));
         socketPtrs.push_back(socketPtr);
@@ -73,30 +73,32 @@ void PeerDiscovery::clientSearch() {
 }
 
 void PeerDiscovery::serverAccept(asio::ip::tcp::socket& _socket, bool& passedBlockingOperation) {
-    tcp::acceptor acceptor(io_context, tcp::endpoint(tcp::v4(), serverPort));
-    asio::error_code ec;
-    acceptor.accept(_socket, ec);
-    passedBlockingOperation = true;
-    if (ec) {
-        std::cout << "serverConnect() error " << ec.message() << "\n";
-        _socket.close();
-    }
-    else {
-        setSocket(std::move(_socket));
-    }
+    tcp::acceptor acceptor(server_io_context, tcp::endpoint(tcp::v4(), serverPort));
+    acceptor.async_accept(_socket, [&](const asio::error_code& error) {
+        if (error) {
+            std::cout << "serverConnect() error " << error.message() << "\n";
+        }
+        else {
+            passedBlockingOperation = true;
+            setSocket(std::move(_socket));
+        }
+        });
+    server_io_context.run();
 }
 
 void PeerDiscovery::serverSearch() {
     std::cout << "serverSearch()\n";
     while (stateWrap.getState() == LinkState::LOCATING) {
-        tcp::socket _socket(io_context);
+        tcp::socket _socket(server_io_context);
         bool passedBlockingOperation = false;
         auto future = std::async(&PeerDiscovery::serverAccept, this, std::ref(_socket), std::ref(passedBlockingOperation));
         future.wait_for(std::chrono::seconds(waitTimeSeconds));
         if (!passedBlockingOperation) {
             _socket.close();
+            server_io_context.stop();
         }
         future.wait();
+        server_io_context.reset();
     }
 }
 
