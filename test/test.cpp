@@ -35,10 +35,7 @@ int main()
             }
             std::this_thread::sleep_for(std::chrono::milliseconds(500));
         }
-
-        std::cout << "before stop\n";
         p2pNetworking.stop();
-        std::cout << "after stop\n";
     }
 
     std::cout << "Closing program.\n";
