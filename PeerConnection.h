@@ -7,16 +7,13 @@
 
 namespace peer2peer {
     class PeerConnection {
+        LinkStateWrap& stateWrap;
         asio::ip::tcp::socket& socket;
-        std::mutex socketMutex;
-        LinkStateWrap stateWrap;
     public:
-        PeerConnection(asio::ip::tcp::socket& _socket);
+        PeerConnection(asio::ip::tcp::socket&& _socket, LinkStateWrap& _stateWrap);
+        ~PeerConnection();
         void sendMessage(std::string msg);
         PeerReceiver receiver;
-        LinkState getState();
-        void close();
-
     };
 }
 

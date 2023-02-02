@@ -3,53 +3,45 @@
 
 using namespace peer2peer;
 
-void P2PNetworking::closeConnection() {
-    if (connection != nullptr) {
-        connection->close();
-    }
-    connection = nullptr;
+P2PNetworking::P2PNetworking() : peerDiscovery(stateWrap) {
+
 }
 
 P2PNetworking::~P2PNetworking() {
-    closeConnection();
+    stop();
 }
 
 void P2PNetworking::start() {
-    closeConnection();
-    peerDiscovery.startSearch();
-
+    stop();
+    peerDiscovery.start();
 }
 
 void P2PNetworking::stop() {
-    peerDiscovery.stopSearch();
-    closeConnection();
+    peerDiscovery.stop();
+    connection = nullptr;
 }
 
 void P2PNetworking::update() {
-    if (connection == nullptr && peerDiscovery.getState() == LinkState::CONNECTED) {
-        connection = std::make_unique<PeerConnection>(peerDiscovery.getSocketRef());
-        peerDiscovery.stopSearch();
+    if (connection == nullptr && stateWrap.getState() == LinkState::CONNECTED) {
+        peerDiscovery.stop();
+        connection = std::make_unique<PeerConnection>(peerDiscovery.getSocketOwnership(), stateWrap);
     }
 }
+
 void P2PNetworking::sendMessage(std::string msg) {
+    update();
     return connection->sendMessage(msg);
 }
 bool P2PNetworking::hasMessage() {
+    update();
     return connection->receiver.hasMessage();
 }
 std::string P2PNetworking::popMessage() {
+    update();
     return connection->receiver.popMessage();
 }
 
 LinkState P2PNetworking::getState() {
-    if (connection != nullptr) {
-        return connection->getState();
-    }
-    else if (peerDiscovery.getState() != LinkState::DISCONNECTED) {
-        return LinkState::LOCATING;
-    }
-    else {
-        return LinkState::DISCONNECTED;
-    }
+    return stateWrap.getState();
 }
 

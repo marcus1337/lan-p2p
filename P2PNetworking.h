@@ -7,22 +7,23 @@
 #include "IPDiscovery.h"
 #include <memory>
 #include <string>
+#include "IPDiscovery.h"
 
 namespace peer2peer {
 
     class P2PNetworking {
 
+        LinkStateWrap stateWrap;
         PeerDiscovery peerDiscovery;
         std::unique_ptr<PeerConnection> connection;
-        void closeConnection();
+        void update();
 
     public:
-
+        P2PNetworking();
         ~P2PNetworking();
 
         void start();
         void stop();
-        void update();
         void sendMessage(std::string msg);
         bool hasMessage();
         std::string popMessage();

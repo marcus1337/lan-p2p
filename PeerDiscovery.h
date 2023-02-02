@@ -12,11 +12,11 @@ namespace peer2peer {
 
     class PeerDiscovery {
 
+        IPDiscovery ipDiscovery;
+        LinkStateWrap& stateWrap;
         std::mutex socketMutex;
         const int serverPort = 5431;
         const int waitTimeSeconds = 4;
-
-        LinkStateWrap stateWrap;
         asio::io_context io_context;
         asio::ip::tcp::socket socket_;
 
@@ -31,12 +31,11 @@ namespace peer2peer {
 
     public:
 
-        PeerDiscovery();
+        PeerDiscovery(LinkStateWrap& _stateWrap);
         ~PeerDiscovery();
-        void startSearch();
-        void stopSearch();
-        LinkState getState();
-        asio::ip::tcp::socket& getSocketRef();
+        void start();
+        void stop();
+        asio::ip::tcp::socket&& getSocketOwnership();
 
     };
 }

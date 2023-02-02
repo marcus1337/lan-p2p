@@ -59,13 +59,9 @@ std::vector<std::string> IPDiscovery::getLocalHostIPs() {
 
 
 void IPDiscovery::broadcast() {
-    sendSocket.open(asio::ip::udp::v4());
-    sendSocket.set_option(asio::socket_base::broadcast(true));
-    sendSocket.set_option(asio::socket_base::reuse_address(true));
     asio::ip::udp::endpoint broadcast_endpoint(
         asio::ip::address_v4::broadcast(), broadcastPort
     );
-
     while (running.load()) {
         std::array<char, 1> send_buffer = { {0} };
         sendSocket.send_to(asio::buffer(send_buffer), broadcast_endpoint);
@@ -100,8 +96,18 @@ std::vector<std::string> IPDiscovery::getIPs() {
     return ipAddresses;
 }
 
+void IPDiscovery::initSockets() {
+    initSendSocket();
+    initBroadcastSocket();
+}
 
-void IPDiscovery::detectBroadcasts() {
+void IPDiscovery::initSendSocket() {
+    sendSocket.open(asio::ip::udp::v4());
+    sendSocket.set_option(asio::socket_base::broadcast(true));
+    sendSocket.set_option(asio::socket_base::reuse_address(true));
+}
+
+void IPDiscovery::initBroadcastSocket() {
     detectSocket.open(asio::ip::udp::v4());
     detectSocket.set_option(asio::socket_base::reuse_address(true));
     detectSocket.set_option(asio::socket_base::broadcast(true));
@@ -109,6 +115,9 @@ void IPDiscovery::detectBroadcasts() {
         asio::ip::make_address("0.0.0.0"), broadcastPort
     );
     detectSocket.bind(listen_endpoint);
+}
+
+void IPDiscovery::detectBroadcasts() {
     std::array<char, 1024> recv_buffer;
     while (running.load()) {
         try {
@@ -126,8 +135,8 @@ void IPDiscovery::detectBroadcasts() {
     }
 }
 
-IPDiscovery::IPDiscovery() : detectSocket(ioc), sendSocket(ioc) {
-    running.store(true);
+IPDiscovery::IPDiscovery() : running(true), detectSocket(ioc), sendSocket(ioc) {
+    initSockets();
     detectBroadcastThread = std::thread(&IPDiscovery::detectBroadcasts, this);
     broadcastThread = std::thread(&IPDiscovery::broadcast, this);
 }
@@ -136,11 +145,18 @@ IPDiscovery::~IPDiscovery() {
     running.store(false);
     detectSocket.close();
     sendSocket.close();
+    joinThreads();
+}
+
+void IPDiscovery::joinThreads() {
     if (detectBroadcastThread.joinable()) {
+        std::cout << "join detectBroadcast\n";
         detectBroadcastThread.join();
     }
     if (broadcastThread.joinable()) {
+        std::cout << "join broadcast\n";
         broadcastThread.join();
     }
     std::cout << "Broadcast threads joined\n";
 }
+

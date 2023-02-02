@@ -12,7 +12,6 @@ namespace peer2peer {
     class IPDiscovery {
 
         std::atomic<bool> running;
-
         asio::io_context ioc;
         asio::ip::udp::socket detectSocket, sendSocket;
         std::thread detectBroadcastThread, broadcastThread;
@@ -25,6 +24,10 @@ namespace peer2peer {
         void detectBroadcasts();
         void broadcast();
         void removeLocalHostIPs(std::vector<std::string>& _ipAddresses);
+        void initSockets();
+        void initSendSocket();
+        void initBroadcastSocket();
+        void joinThreads();
     public:
         IPDiscovery();
         ~IPDiscovery();

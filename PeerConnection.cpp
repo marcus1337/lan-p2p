@@ -4,12 +4,17 @@
 
 using namespace peer2peer;
 
-PeerConnection::PeerConnection(asio::ip::tcp::socket& _socket) : socket(_socket), receiver(_socket, socketMutex, stateWrap), stateWrap(LinkState::CONNECTED) {
+PeerConnection::PeerConnection(asio::ip::tcp::socket&& _socket, LinkStateWrap& _stateWrap) : socket(_socket), receiver(_socket, _stateWrap), stateWrap(_stateWrap) {
 
 }
 
+PeerConnection::~PeerConnection() {
+    std::cout << "PeerConnection::close()\n";
+    socket.close();
+    stateWrap.setState(LinkState::DISCONNECTED);
+}
+
 void PeerConnection::sendMessage(std::string msg) {
-    std::lock_guard<std::mutex> loc(socketMutex);
     asio::error_code ec;
     socket.write_some(asio::buffer(msg), ec);
     if (ec) {
@@ -18,12 +23,5 @@ void PeerConnection::sendMessage(std::string msg) {
     }
 }
 
-LinkState PeerConnection::getState() {
-    return stateWrap.getState();
-}
 
-void PeerConnection::close() {
-    std::cout << "PeerConnection::close()\n";
-    socket.close();
-}
 

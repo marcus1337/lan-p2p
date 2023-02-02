@@ -16,12 +16,10 @@ namespace peer2peer {
 
     public:
 
-        LinkStateWrap(LinkState _state);
+        LinkStateWrap();
         LinkState getState();
         void setState(LinkState _state);
         bool trySetStateConnected();
-        void stopLocating();
-
         static LinkState getSocketState(asio::ip::tcp::socket& _socket);
 
     };

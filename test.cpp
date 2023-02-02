@@ -22,19 +22,21 @@ int main()
 
         p2pNetworking.start();
 
-        while (p2pNetworking.getState() != LinkState::DISCONNECTED) {
-            std::cout << "state " << (int)p2pNetworking.getState() << "\n";
-            p2pNetworking.update();
-            if (p2pNetworking.getState() == LinkState::CONNECTED) {
-                p2pNetworking.sendMessage(getTime());
-                if (p2pNetworking.hasMessage()) {
-                    std::cout << "Msg [" << p2pNetworking.popMessage() << "\n";
-                }
+        while (p2pNetworking.getState() == LinkState::LOCATING) {
+            std::cout << "Locating...\n";
+            std::this_thread::sleep_for(std::chrono::milliseconds(500));
+        }
+
+        while (p2pNetworking.getState() == LinkState::CONNECTED) {
+            std::cout << "Connected...\n";
+            p2pNetworking.sendMessage(getTime());
+            if (p2pNetworking.hasMessage()) {
+                std::cout << "Msg [" << p2pNetworking.popMessage() << "\n";
             }
             std::this_thread::sleep_for(std::chrono::milliseconds(500));
         }
 
-        std::cout << "b4 stop...\n";
+        std::cout << "before stop\n";
         p2pNetworking.stop();
         std::cout << "after stop\n";
     }

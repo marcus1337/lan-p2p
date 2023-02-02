@@ -7,12 +7,12 @@ using namespace peer2peer;
 using namespace asio::ip;
 
 
-PeerDiscovery::PeerDiscovery() : stateWrap(LinkState::DISCONNECTED), socket_(io_context) {
+PeerDiscovery::PeerDiscovery(LinkStateWrap& _stateWrap) : stateWrap(_stateWrap), socket_(io_context) {
 
 }
 
 PeerDiscovery::~PeerDiscovery() {
-    stopSearch();
+    stop();
 }
 
 bool PeerDiscovery::setSocket(asio::ip::tcp::socket&& _socket) {
@@ -46,10 +46,9 @@ void PeerDiscovery::clientConnect(std::string ip) {
 
 void PeerDiscovery::clientSearch() {
     std::cout << "clientSearch()\n";
-    IPDiscovery ipDiscovery;
     std::vector<std::future<void>> clients;
 
-    while (getState() == LinkState::LOCATING) {
+    while (stateWrap.getState() == LinkState::LOCATING) {
         clients.clear();
         for (std::string ip : ipDiscovery.getRemoteLANIPs()) {
             clients.push_back(std::async(&PeerDiscovery::clientConnect, this, ip));
@@ -76,9 +75,9 @@ void PeerDiscovery::serverConnect() {
 
 void PeerDiscovery::serverSearch() {
     std::cout << "serverSearch()\n";
-    while (getState() == LinkState::LOCATING) {
+    while (stateWrap.getState() == LinkState::LOCATING) {
         try {
-            //serverConnect();
+            serverConnect();
         }
         catch (std::exception& e) {
             std::cerr << e.what() << std::endl;
@@ -86,31 +85,27 @@ void PeerDiscovery::serverSearch() {
     }
 }
 
-LinkState PeerDiscovery::getState() {
-    return stateWrap.getState();
+asio::ip::tcp::socket&& PeerDiscovery::getSocketOwnership() {
+    return std::move(socket_);
 }
 
-asio::ip::tcp::socket& PeerDiscovery::getSocketRef() {
-    return socket_;
-}
-
-void PeerDiscovery::startSearch() {
+void PeerDiscovery::start() {
     stateWrap.setState(LinkState::LOCATING);
-    clientThread = std::thread(&PeerDiscovery::clientSearch, this);
+    //clientThread = std::thread(&PeerDiscovery::clientSearch, this);
     serverThread = std::thread(&PeerDiscovery::serverSearch, this);
 }
 
-void PeerDiscovery::stopSearch() {
-    stateWrap.setState(LinkState::DISCONNECTED);
+void PeerDiscovery::stop() {
+    if (stateWrap.getState() == LinkState::LOCATING)
+        stateWrap.setState(LinkState::DISCONNECTED);
     joinThreads();
 }
 
 void PeerDiscovery::joinThreads() {
-
-    std::cout << "thread 1\n";
+    std::cout << "PeerDiscovery clientThread\n";
     if (clientThread.joinable())
         clientThread.join();
-    std::cout << "thread 2\n";
+    std::cout << "PeerDiscovery serverThread\n";
     if (serverThread.joinable())
         serverThread.join();
     std::cout << "PeerDiscovery threads joined\n";

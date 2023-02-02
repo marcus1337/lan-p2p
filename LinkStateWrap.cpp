@@ -6,7 +6,7 @@
 using namespace peer2peer;
 
 
-LinkStateWrap::LinkStateWrap(LinkState _state) : state(_state) {
+LinkStateWrap::LinkStateWrap() : state(LinkState::DISCONNECTED) {
 
 }
 LinkState LinkStateWrap::getState() {
@@ -24,13 +24,6 @@ bool LinkStateWrap::trySetStateConnected() {
         return true;
     }
     return false;
-}
-
-void LinkStateWrap::stopLocating() {
-    std::lock_guard<std::mutex> lock(stateMutex);
-    if (state == LinkState::LOCATING) {
-        state = LinkState::DISCONNECTED;
-    }
 }
 
 LinkState LinkStateWrap::getSocketState(asio::ip::tcp::socket& _socket) {

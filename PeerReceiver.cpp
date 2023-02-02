@@ -14,9 +14,7 @@ void PeerReceiver::receive() {
     while (stateWrap.getState() == LinkState::CONNECTED) {
         asio::error_code ec;
         uint8_t data[512];
-        socketMutex.lock();
         size_t len = socket.read_some(asio::buffer(data), ec);
-        socketMutex.unlock();
         std::string str(data, data + len);
         
         if (ec) {
@@ -30,11 +28,13 @@ void PeerReceiver::receive() {
 
 }
 
-PeerReceiver::PeerReceiver(asio::ip::tcp::socket& _socket, std::mutex& _socketMutex, LinkStateWrap& _stateWrap) : socket(_socket), socketMutex(_socketMutex), stateWrap(_stateWrap) {
+PeerReceiver::PeerReceiver(asio::ip::tcp::socket& _socket, LinkStateWrap& _stateWrap) : socket(_socket), stateWrap(_stateWrap) {
     receiveThread = std::thread(&PeerReceiver::receive, this);
 }
 
 PeerReceiver::~PeerReceiver() {
+    stateWrap.setState(LinkState::DISCONNECTED);
+    socket.close();
     if (receiveThread.joinable())
         receiveThread.join();
 }
