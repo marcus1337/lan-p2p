@@ -14,7 +14,6 @@ namespace peer2peer {
 
         IPDiscovery ipDiscovery;
         LinkStateWrap& stateWrap;
-        std::mutex socketMutex;
         const int serverPort = 5431;
         const int waitTimeSeconds = 4;
         asio::io_context io_context;
@@ -23,9 +22,10 @@ namespace peer2peer {
         std::thread clientThread, serverThread;
 
         bool setSocket(asio::ip::tcp::socket&& _socket);
-        void clientConnect(std::string ip);
+        void clientConnect(std::string ip, asio::ip::tcp::socket& _socket, bool& passedBlockingOperation);
         void clientSearch();
-        void serverConnect();
+        void clientTryConnections();
+        void serverAccept(asio::ip::tcp::socket& _socket, bool& passedBlockingOperation);
         void serverSearch();
         void joinThreads();
 

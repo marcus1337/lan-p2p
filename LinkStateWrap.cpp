@@ -26,6 +26,13 @@ bool LinkStateWrap::trySetStateConnected() {
     return false;
 }
 
+void LinkStateWrap::setDisconnectedIfLocating() {
+    std::lock_guard<std::mutex> lock(stateMutex);
+    if (state == LinkState::LOCATING) {
+        state = LinkState::DISCONNECTED;
+    }
+}
+
 LinkState LinkStateWrap::getSocketState(asio::ip::tcp::socket& _socket) {
     try {
         if (_socket.is_open() && _socket.remote_endpoint().address() != asio::ip::address()) {

@@ -20,6 +20,7 @@ namespace peer2peer {
         LinkState getState();
         void setState(LinkState _state);
         bool trySetStateConnected();
+        void setDisconnectedIfLocating();
         static LinkState getSocketState(asio::ip::tcp::socket& _socket);
 
     };
