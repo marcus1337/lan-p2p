@@ -15,7 +15,7 @@ namespace peer2peer {
         IPDiscovery ipDiscovery;
         LinkStateWrap& stateWrap;
         const int serverPort = 5431;
-        const int waitTimeSeconds = 4;
+        const int clientWaitTimeSeconds = 4;
         asio::io_context client_io_context, server_io_context;
         asio::ip::tcp::socket socket_;
 

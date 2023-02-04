@@ -12,6 +12,7 @@ namespace peer2peer {
 
     class P2PNetworking {
 
+        uint64_t startTimeInMilliseconds = 0;
         LinkStateWrap stateWrap;
         PeerDiscovery peerDiscovery;
         std::unique_ptr<PeerConnection> connection;
@@ -27,6 +28,7 @@ namespace peer2peer {
         bool hasMessage();
         std::string popMessage();
         LinkState getState();
+        uint64_t getStartTimeInMilliseconds();
 
     };
 

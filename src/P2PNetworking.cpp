@@ -1,5 +1,6 @@
 #include "P2PNetworking.h"
 #include <iostream>
+#include <chrono>
 
 using namespace peer2peer;
 
@@ -12,6 +13,7 @@ P2PNetworking::~P2PNetworking() {
 }
 
 void P2PNetworking::start() {
+    startTimeInMilliseconds = (uint64_t) std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
     stop();
     peerDiscovery.start();
 }
@@ -45,3 +47,6 @@ LinkState P2PNetworking::getState() {
     return stateWrap.getState();
 }
 
+uint64_t P2PNetworking::getStartTimeInMilliseconds() {
+    return startTimeInMilliseconds;
+}

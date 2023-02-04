@@ -55,7 +55,7 @@ void PeerDiscovery::clientTryConnections() {
         passedBlockingCallPtrs.push_back(passedBlock);
     }
 
-    std::chrono::system_clock::time_point clientTime = std::chrono::system_clock::now() + std::chrono::seconds(waitTimeSeconds);
+    std::chrono::system_clock::time_point clientTime = std::chrono::system_clock::now() + std::chrono::seconds(clientWaitTimeSeconds);
     for (int i = 0; i < clients.size(); i++) {
         clients[i].wait_until(clientTime);
         if (*passedBlockingCallPtrs[i] == false) {
@@ -92,7 +92,9 @@ void PeerDiscovery::serverSearch() {
         tcp::socket _socket(server_io_context);
         bool passedBlockingOperation = false;
         auto future = std::async(&PeerDiscovery::serverAccept, this, std::ref(_socket), std::ref(passedBlockingOperation));
-        future.wait_for(std::chrono::seconds(waitTimeSeconds));
+        while (stateWrap.getState() == LinkState::LOCATING) {
+            future.wait_for(std::chrono::milliseconds(100));
+        }
         if (!passedBlockingOperation) {
             _socket.close();
             server_io_context.stop();
