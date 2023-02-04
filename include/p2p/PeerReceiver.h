@@ -11,6 +11,8 @@
 namespace peer2peer {
     class PeerReceiver {
 
+        static constexpr std::size_t MAX_STORED_MESSAGES = 500;
+        static constexpr std::size_t MAX_MESSAGE_SIZE = 30000;
         LinkStateWrap& stateWrap;
         std::mutex msgMutex;
         asio::ip::tcp::socket& socket;

@@ -7,13 +7,14 @@ using namespace peer2peer;
 
 void PeerReceiver::addMessage(std::string msg) {
     std::lock_guard<std::mutex> lock(msgMutex);
-    messages.push(msg);
+    if(messages.size() < MAX_STORED_MESSAGES)
+        messages.push(msg);
 }
 
 void PeerReceiver::receive() {
     while (stateWrap.getState() == LinkState::CONNECTED) {
         asio::error_code ec;
-        uint8_t data[512];
+        uint8_t data[MAX_MESSAGE_SIZE];
         size_t len = socket.read_some(asio::buffer(data), ec);
         std::string str(data, data + len);
         
