@@ -5,7 +5,7 @@
 using namespace peer2peer;
 
 P2PNetworking::P2PNetworking() : peerDiscovery(stateWrap) {
-    constructionTimeInMilliseconds = (uint64_t)std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+
 }
 
 P2PNetworking::~P2PNetworking() {
@@ -20,7 +20,11 @@ void P2PNetworking::start() {
 }
 
 void P2PNetworking::stop() {
+    stateWrap.setState(LinkState::DISCONNECTED);
     peerDiscovery.stop();
+    if (connection != nullptr) {
+        connection->stop();
+    }
     connection = nullptr;
 }
 
@@ -50,6 +54,6 @@ LinkState P2PNetworking::getState() {
     return stateWrap.getState();
 }
 
-uint32_t P2PNetworking::getStartTimeInMilliseconds() {
-    return (constructionTimeInMilliseconds - startTimeInMilliseconds);
+uint64_t P2PNetworking::getStartTimeInMilliseconds() {
+    return startTimeInMilliseconds;
 }

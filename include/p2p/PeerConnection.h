@@ -14,6 +14,7 @@ namespace peer2peer {
         PeerConnection(asio::ip::tcp::socket&& _socket, LinkStateWrap& _stateWrap);
         ~PeerConnection();
         void sendBytes(std::vector<uint8_t> bytes);
+        void stop();
         PeerReceiver receiver;
     };
 }

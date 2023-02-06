@@ -10,6 +10,10 @@ PeerConnection::PeerConnection(asio::ip::tcp::socket&& _socket, LinkStateWrap& _
 
 PeerConnection::~PeerConnection() {
     std::cout << "PeerConnection::close()\n";
+    stop();
+}
+
+void PeerConnection::stop() {
     socket.close();
     stateWrap.setState(LinkState::DISCONNECTED);
 }
