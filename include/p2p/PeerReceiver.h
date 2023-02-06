@@ -16,15 +16,15 @@ namespace peer2peer {
         LinkStateWrap& stateWrap;
         std::mutex msgMutex;
         asio::ip::tcp::socket& socket;
-        std::queue<std::string> messages;
+        std::queue<std::vector<uint8_t>> messages;
         std::thread receiveThread;
-        void addMessage(std::string msg);
+        void addBytes(std::vector<uint8_t> msg);
         void receive();
     public:
         PeerReceiver(asio::ip::tcp::socket& _socket, LinkStateWrap& _stateWrap);
         ~PeerReceiver();
-        std::string popMessage();
-        bool hasMessage();
+        std::vector<uint8_t> popBytes();
+        bool hasReceivedData();
 
     };
 }

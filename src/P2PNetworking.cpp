@@ -5,7 +5,7 @@
 using namespace peer2peer;
 
 P2PNetworking::P2PNetworking() : peerDiscovery(stateWrap) {
-
+    constructionTimeInMilliseconds = (uint64_t)std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
 }
 
 P2PNetworking::~P2PNetworking() {
@@ -13,7 +13,8 @@ P2PNetworking::~P2PNetworking() {
 }
 
 void P2PNetworking::start() {
-    startTimeInMilliseconds = (uint64_t) std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+    startTimeInMilliseconds = (uint64_t)std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+    
     stop();
     peerDiscovery.start();
 }
@@ -30,23 +31,25 @@ void P2PNetworking::update() {
     }
 }
 
-void P2PNetworking::sendMessage(std::string msg) {
+void P2PNetworking::sendBytes(std::vector<uint8_t> bytes) {
     update();
-    return connection->sendMessage(msg);
+    return connection->sendBytes(bytes);
 }
-bool P2PNetworking::hasMessage() {
+
+bool P2PNetworking::hasReceivedData() {
     update();
-    return connection->receiver.hasMessage();
+    return connection->receiver.hasReceivedData();
 }
-std::string P2PNetworking::popMessage() {
+
+std::vector<uint8_t> P2PNetworking::popBytes() {
     update();
-    return connection->receiver.popMessage();
+    return connection->receiver.popBytes();
 }
 
 LinkState P2PNetworking::getState() {
     return stateWrap.getState();
 }
 
-uint64_t P2PNetworking::getStartTimeInMilliseconds() {
-    return startTimeInMilliseconds;
+uint32_t P2PNetworking::getStartTimeInMilliseconds() {
+    return (constructionTimeInMilliseconds - startTimeInMilliseconds);
 }

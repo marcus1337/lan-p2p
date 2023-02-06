@@ -4,6 +4,7 @@
 #include "PeerReceiver.h"
 #include "LinkState.h"
 #include <mutex>
+#include <vector>
 
 namespace peer2peer {
     class PeerConnection {
@@ -12,7 +13,7 @@ namespace peer2peer {
     public:
         PeerConnection(asio::ip::tcp::socket&& _socket, LinkStateWrap& _stateWrap);
         ~PeerConnection();
-        void sendMessage(std::string msg);
+        void sendBytes(std::vector<uint8_t> bytes);
         PeerReceiver receiver;
     };
 }

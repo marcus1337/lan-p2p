@@ -5,7 +5,7 @@
 
 using namespace peer2peer;
 
-void PeerReceiver::addMessage(std::string msg) {
+void PeerReceiver::addBytes(std::vector<uint8_t> msg) {
     std::lock_guard<std::mutex> lock(msgMutex);
     if(messages.size() < MAX_STORED_MESSAGES)
         messages.push(msg);
@@ -15,15 +15,24 @@ void PeerReceiver::receive() {
     while (stateWrap.getState() == LinkState::CONNECTED) {
         asio::error_code ec;
         uint8_t data[MAX_MESSAGE_SIZE];
-        size_t len = socket.read_some(asio::buffer(data), ec);
-        std::string str(data, data + len);
-        
+
+        uint32_t numBytes;
+        asio::read(socket, asio::buffer(&numBytes, sizeof(numBytes)), ec);
+        if ((ec && ec != asio::error::eof) || numBytes >= MAX_MESSAGE_SIZE) {
+            std::cout << "error: " << ec.message() << " numBytes " << numBytes << "\n";
+            stateWrap.setState(LinkState::DISCONNECTED);
+            return;
+        }
+
+        asio::read(socket, asio::buffer(&data, numBytes), ec);
+
         if (ec && ec != asio::error::eof) {
-            std::cout << "error: " << ec.message() << "\n";
+            std::cout << "error: " << ec.message() << " numBytes " << numBytes << "\n";
             stateWrap.setState(LinkState::DISCONNECTED);
         }
         else {
-            addMessage(str);
+            std::vector<uint8_t> bytes(data, data + numBytes);
+            addBytes(bytes);
         }
     }
 
@@ -40,14 +49,14 @@ PeerReceiver::~PeerReceiver() {
         receiveThread.join();
 }
 
-std::string PeerReceiver::popMessage() {
+std::vector<uint8_t> PeerReceiver::popBytes() {
     std::lock_guard<std::mutex> lock(msgMutex);
-    std::string msg = messages.front();
+    auto msg = messages.front();
     messages.pop();
     return msg;
 }
 
-bool PeerReceiver::hasMessage() {
+bool PeerReceiver::hasReceivedData() {
     std::lock_guard<std::mutex> lock(msgMutex);
     return !messages.empty();
 }

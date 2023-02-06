@@ -14,9 +14,16 @@ PeerConnection::~PeerConnection() {
     stateWrap.setState(LinkState::DISCONNECTED);
 }
 
-void PeerConnection::sendMessage(std::string msg) {
+void PeerConnection::sendBytes(std::vector<uint8_t> bytes) {
+
+    uint32_t numBytes = bytes.size();
     asio::error_code ec;
-    socket.write_some(asio::buffer(msg), ec);
+    asio::write(socket, asio::buffer(&numBytes, sizeof(numBytes)), ec);
+    if (ec) {
+        std::cout << "send error: " << ec.message() << "\n";
+        stateWrap.setState(LinkState::DISCONNECTED);
+    }
+    asio::write(socket, asio::buffer(bytes), ec);
     if (ec) {
         std::cout << "send error: " << ec.message() << "\n";
         stateWrap.setState(LinkState::DISCONNECTED);

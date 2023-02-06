@@ -10,7 +10,9 @@ add_library(${PROJECT_NAME} STATIC
 "src/LinkStateWrap.cpp"
 "src/PeerConnection.cpp"
 "src/PeerDiscovery.cpp"
-"src/PeerReceiver.cpp")
+"src/PeerReceiver.cpp"
+"src/Handshake.cpp"
+)
 
 target_include_directories(${PROJECT_NAME}
   PUBLIC

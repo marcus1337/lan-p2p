@@ -2,6 +2,7 @@
 #include <iostream>
 #include <exception>
 #include <future>
+#include "p2p/Handshake.h"
 
 using namespace peer2peer;
 using namespace asio::ip;
@@ -16,7 +17,11 @@ PeerDiscovery::~PeerDiscovery() {
 }
 
 bool PeerDiscovery::setSocket(asio::ip::tcp::socket&& _socket) {
-    if (LinkStateWrap::getSocketState(_socket) == LinkState::CONNECTED && stateWrap.trySetStateConnected()) {
+
+    Handshake handshake(_socket);
+
+    if (handshake() && LinkStateWrap::getSocketState(_socket) == LinkState::CONNECTED && stateWrap.trySetStateConnected()) {
+        std::cout << "Handshake success\n";
         socket_ = std::move(_socket);
         return true;
     }
